@@ -9,7 +9,7 @@ public class PropertyPriceLookup {
 
     /** Generate a random price.
      */
-    public BigDecimal getPrice(String objectDescription) {
+    public BigDecimal getPrice() {
         BigDecimal min = new BigDecimal("10.0");
         BigDecimal max = new BigDecimal("99.99");
         BigDecimal randomBigDecimal = min.add(new BigDecimal(Math.random()).multiply(max.subtract(min)));

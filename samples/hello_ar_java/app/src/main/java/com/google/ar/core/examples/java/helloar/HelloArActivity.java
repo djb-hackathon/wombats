@@ -26,6 +26,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -52,6 +53,7 @@ import com.google.ar.core.examples.java.common.rendering.ObjectRenderer;
 import com.google.ar.core.examples.java.common.rendering.ObjectRenderer.BlendMode;
 import com.google.ar.core.examples.java.common.rendering.PlaneRenderer;
 import com.google.ar.core.examples.java.common.rendering.PointCloudRenderer;
+import com.google.ar.core.examples.java.helloar.price.PropertyPriceLookup;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
@@ -62,6 +64,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -97,6 +101,10 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
   // Anchors created from taps used for object placing.
   private final ArrayList<Anchor> anchors = new ArrayList<>();
 
+  private PropertyPriceLookup propertyPriceLookup = new PropertyPriceLookup();
+  private BigDecimal propertyPriceTotal = new BigDecimal(0);
+  private List<ARProperty> allSelectedPropertyData = new ArrayList<ARProperty>();
+  private Boolean canPlaceModel = Boolean.TRUE;
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -289,7 +297,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
       // compared to frame rate.
 
       MotionEvent tap = tapHelper.poll();
-      if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
+      if (tap != null && camera.getTrackingState() == TrackingState.TRACKING && canPlaceModel) {
         for (HitResult hit : frame.hitTest(tap)) {
           // Check if any plane was hit, and if it was hit inside the plane polygon
           Trackable trackable = hit.getTrackable();
@@ -311,6 +319,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             // in the correct position relative both to the world and to the plane.
             anchors.add(hit.createAnchor());
             capturePicture = true;
+            makeButtonsVisible();
             break;
           }
         }
@@ -443,5 +452,74 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     label_text.setTextColor(Color.WHITE);
     label_text.setPadding(5, 5, 5, 5);
     tr.addView(label_text);
+  }
+
+  //This is all bad!!!
+  public void propertyOneSelected(View view) {
+    handlePropertySelected(findViewById(R.id.propertyOne));
+  }
+  public void propertyTwoSelected(View view) {
+    handlePropertySelected(findViewById(R.id.propertyTwo));
+  }
+  public void propertyThreeSelected(View view) {
+    handlePropertySelected(findViewById(R.id.propertyThree));
+  }
+  public void propertyOtherSelected(View view) {
+    handlePropertySelected(findViewById(R.id.propertyOther));
+  }
+  private void handlePropertySelected(Button selectedButton){
+    BigDecimal itemPrice=updatePriceData();
+    String itemName = selectedButton.getText().toString();
+    createARPropertyAndAddToList(itemPrice,itemName);
+    makeButtonsInvisible();
+    canPlaceModel = true;
+  }
+  private void makeButtonsInvisible(){
+    Button buttonOne=(Button) findViewById(R.id.propertyOne);
+    Button buttonTwo=(Button) findViewById(R.id.propertyTwo);
+    Button buttonThree=(Button) findViewById(R.id.propertyThree);
+    Button buttonOther=(Button) findViewById(R.id.propertyOther);
+/*    buttonOne.setVisibility(View.INVISIBLE);
+    buttonTwo.setVisibility(View.INVISIBLE);
+    buttonThree.setVisibility(View.INVISIBLE);
+    buttonOther.setVisibility(View.INVISIBLE);*/
+    buttonOne.setText("");
+    buttonTwo.setText("");
+    buttonThree.setText("");
+    buttonOther.setText("");
+  }
+  private void makeButtonsVisible(){
+    Button buttonOne=(Button) findViewById(R.id.propertyOne);
+    Button buttonTwo=(Button) findViewById(R.id.propertyTwo);
+    Button buttonThree=(Button) findViewById(R.id.propertyThree);
+    Button buttonOther=(Button) findViewById(R.id.propertyOther);
+/*    buttonOne.setVisibility(View.VISIBLE);
+    buttonTwo.setVisibility(View.VISIBLE);
+    buttonThree.setVisibility(View.VISIBLE);
+    buttonOther.setVisibility(View.VISIBLE);*/
+    buttonOne.setText("test1");
+    buttonTwo.setText("test1");
+    buttonThree.setText("test1");
+    buttonOther.setText("test1");
+    canPlaceModel = false;
+  }
+
+  /**
+   *return the item cost
+   */
+  private BigDecimal updatePriceData(){
+    BigDecimal itemPrice = propertyPriceLookup.getPrice();
+    propertyPriceTotal = propertyPriceTotal.add(itemPrice);
+    TextView propertyPriceText = (TextView) findViewById(R.id.propertyPrice);
+    TextView propertyPriceTotalText = (TextView) findViewById(R.id.propertyPriceTotal);
+    propertyPriceText.setText("+ "+itemPrice.toString());
+    propertyPriceTotalText.setText(propertyPriceTotal.toString());
+    return itemPrice;
+  }
+  private void createARPropertyAndAddToList(BigDecimal itemCost, String itemDescription){
+    ARProperty prop = new ARProperty();
+    prop.cost = itemCost;
+    prop.propertyDescription = itemDescription;
+    allSelectedPropertyData.add(prop);
   }
 }
