@@ -5,7 +5,7 @@
 
     <ImageView android:id="@+id/splashscreen2" android:layout_width="wrap_content"
         android:layout_height="fill_parent"
-        android:src="@drawable/afi_logo_gif"
+        android:src="@drawable/menu"
         android:layout_gravity="center"/>
 
     <TextView android:layout_width="fill_parent"
