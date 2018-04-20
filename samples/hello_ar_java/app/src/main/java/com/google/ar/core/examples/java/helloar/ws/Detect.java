@@ -1,4 +1,4 @@
-package com.google.ar.core.examples.java.helloar.ws;
+package com.amfam.wombat.arpropertypricecalculator.ws;
 
 /*
  * Copyright 2017 Google Inc.
@@ -16,8 +16,16 @@ package com.google.ar.core.examples.java.helloar.ws;
  * limitations under the License.
  */
 
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+import android.util.Base64;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.google.api.client.http.HttpTransport;
 import com.google.cloud.vision.v1.AnnotateImageRequest;
 import com.google.cloud.vision.v1.AnnotateImageResponse;
+import com.google.cloud.vision.v1.BatchAnnotateImagesRequest;
 import com.google.cloud.vision.v1.BatchAnnotateImagesResponse;
 import com.google.cloud.vision.v1.Block;
 import com.google.cloud.vision.v1.ColorInfo;
@@ -47,6 +55,11 @@ import com.google.cloud.vision.v1.WebDetectionParams;
 import com.google.cloud.vision.v1.Word;
 
 import com.google.protobuf.ByteString;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -55,7 +68,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.entity.StringEntity;
+
+import static android.app.PendingIntent.getActivity;
+
+
+
 public class Detect {
+    String visResponse;
     /**
      * Detects labels in the specified local image.
      *
@@ -132,5 +153,97 @@ public class Detect {
         }
     }
 
+
+    public static Image buildImage(String filePath) throws Exception {
+        ByteString imgBytes = ByteString.readFrom(new FileInputStream(filePath));
+
+        Image img = Image.newBuilder().setContent(imgBytes).build();
+
+        return img;
+    }
+
+    public String getResponse(Context context,byte[] byteArray) {
+        visResponse = new String();
+        try {
+
+            String requestURL = "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyDL2EgkAvpP1tVvqCdn1HaedgyPG-t621c";
+            AsyncHttpClient client = new AsyncHttpClient();
+            StringEntity entity = new StringEntity(Detect.buildRequestJSON(byteArray));
+            client.post(context, requestURL, entity, "application/json",new AsyncHttpResponseHandler(){
+                        @Override
+                        public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                            visResponse = responseBody.toString();
+                        }
+
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                            visResponse = responseBody.toString();
+                        }
+                    }
+
+            );
+        } catch(Exception e){
+
+        }
+        System.out.println(visResponse);
+        return visResponse;
+    }
+
+
+
+
+
+
+
+    public static String buildRequestJSON(byte[] byteArray) {
+        String requestJSON = "";
+        String base64data = Base64.encodeToString(byteArray, Base64.URL_SAFE);
+
+        try {
+            // Create an array containing
+            //  the LABEL_DETECTION feature
+            JSONArray features = new JSONArray();
+            JSONObject feature = new JSONObject();
+            feature.put("type", "LABEL_DETECTION");
+            features.put(feature);
+
+            // Create an object containing
+            // the Base64-encoded image data
+            JSONObject imageContent = new JSONObject();
+            imageContent.put("content", base64data);
+
+            // Put the array and object into a single request
+            // and then put the request into an array of requests
+            JSONArray requests = new JSONArray();
+            JSONObject request = new JSONObject();
+            request.put("image", imageContent);
+            request.put("features", features);
+            requests.put(request);
+            JSONObject postData = new JSONObject();
+            postData.put("requests", requests);
+
+            // Convert the JSON into a string
+            requestJSON = postData.toString();
+        } catch (Exception e) {
+            System.err.print(e.getMessage());
+        }
+        return requestJSON;
+    }
+
+
+    public static List<EntityAnnotation> getTopThree(List<EntityAnnotation> annotations) {
+        List<EntityAnnotation> choices = new ArrayList<>();
+
+        int i = 0;
+        int max = 3;
+        while (i < annotations.size() && i < max){
+            choices.add(annotations.get(i));
+            i++;
+        }
+
+        EntityAnnotation other = EntityAnnotation.newBuilder().setDescription("Other").build();
+        choices.add(other);
+        return choices;
+    }
 }
 
