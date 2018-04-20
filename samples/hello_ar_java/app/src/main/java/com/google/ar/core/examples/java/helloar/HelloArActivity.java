@@ -69,6 +69,7 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 
@@ -334,7 +335,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
             // in the correct position relative both to the world and to the plane.
             anchors.add(hit.createAnchor());
             capturePicture = true;
-            makeButtonsVisible();
+
             break;
           }
         }
@@ -388,8 +389,12 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         Context context = this.getApplicationContext();
         String response = new Detect().getResponse(context,byteArray2);
         JSONArray r = Detect.parseJSON(response);
-        System.out.println(r.toString());
+        System.out.println(r.get(0));
+        System.out.println(r.get(1));
+        System.out.println(r.get(2));
 
+        System.out.println(r.toString());
+        makeButtonsVisible("","","");
       }
 
       // If not tracking, don't draw 3d objects.
@@ -535,7 +540,7 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     buttonThree.setText("");
     buttonOther.setText("");
   }
-  private void makeButtonsVisible(){
+  private void makeButtonsVisible(String description1, String description2, String description3){
     Button buttonOne=(Button) findViewById(R.id.propertyOne);
     Button buttonTwo=(Button) findViewById(R.id.propertyTwo);
     Button buttonThree=(Button) findViewById(R.id.propertyThree);
@@ -544,10 +549,10 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     buttonTwo.setVisibility(View.VISIBLE);
     buttonThree.setVisibility(View.VISIBLE);
     buttonOther.setVisibility(View.VISIBLE);*/
-    buttonOne.setText("test1");
-    buttonTwo.setText("test1");
-    buttonThree.setText("test1");
-    buttonOther.setText("test1");
+    buttonOne.setText(description1);
+    buttonTwo.setText(description2);
+    buttonThree.setText(description3);
+    buttonOther.setText("Other");
     canPlaceModel = false;
   }
 
@@ -569,7 +574,6 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     prop.propertyDescription = itemDescription;
     allSelectedPropertyData.add(prop);
   }
-
 
   private static Bitmap yuv2RBG(int imageWidth, int imageHeight, byte[] data) {
     // the bitmap we want to fill with the image

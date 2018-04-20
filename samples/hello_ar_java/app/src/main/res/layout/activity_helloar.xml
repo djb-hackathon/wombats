@@ -38,7 +38,8 @@
       android:elevation="1dp"
       android:onClick="propertyOtherSelected"
       android:textColor="@android:color/holo_red_dark"
-      android:textSize="18sp"
+      android:textSize="24sp"
+      android:textStyle="bold"
       android:visibility="visible" />
 
   <Button
@@ -52,7 +53,8 @@
       android:elevation="1dp"
       android:onClick="propertyThreeSelected"
       android:textColor="@android:color/holo_red_dark"
-      android:textSize="18sp"
+      android:textSize="24sp"
+      android:textStyle="bold"
       android:visibility="visible" />
 
   <Button
@@ -66,7 +68,8 @@
       android:elevation="1dp"
       android:onClick="propertyTwoSelected"
       android:textColor="@android:color/holo_red_dark"
-      android:textSize="18sp"
+      android:textSize="24sp"
+      android:textStyle="bold"
       android:visibility="visible" />
 
   <TextView
@@ -114,7 +117,8 @@
       android:elevation="1dp"
       android:onClick="propertyOneSelected"
       android:textColor="@android:color/holo_red_dark"
-      android:textSize="18sp"
+      android:textSize="24sp"
+      android:textStyle="bold"
       android:visibility="visible" />
 
 </RelativeLayout>
