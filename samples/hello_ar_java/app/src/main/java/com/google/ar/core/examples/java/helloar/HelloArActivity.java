@@ -72,6 +72,7 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -389,12 +390,19 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         Context context = this.getApplicationContext();
         String response = new Detect().getResponse(context,byteArray2);
         JSONArray r = Detect.parseJSON(response);
-        System.out.println(r.get(0));
-        System.out.println(r.get(1));
-        System.out.println(r.get(2));
 
-        System.out.println(r.toString());
-        makeButtonsVisible("","","");
+
+        String desc1;
+        if (r.length() > 0) desc1 = r.getJSONObject(0).getString("description");
+        else desc1 = "";
+        String desc2;
+        if (r.length() > 1) desc2 = r.getJSONObject(1).getString("description");
+        else desc2 = "";
+        String desc3;
+        if (r.length() > 2) desc3 = r.getJSONObject(2).getString("description");
+        else desc3 = "";
+
+        makeButtonsVisible(desc1,desc2,desc3);
       }
 
       // If not tracking, don't draw 3d objects.
@@ -554,6 +562,9 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     buttonThree.setText(description3);
     buttonOther.setText("Other");
     canPlaceModel = false;
+    /*ARProperty property1 = new ARProperty();
+    property1.propertyDescription = description1;
+    property1.cost = propertyPriceLookup.getPrice();*/
   }
 
   /**
@@ -575,60 +586,4 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     allSelectedPropertyData.add(prop);
   }
 
-  private static Bitmap yuv2RBG(int imageWidth, int imageHeight, byte[] data) {
-    // the bitmap we want to fill with the image
-    Bitmap bitmap = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888);
-    int numPixels = imageWidth*imageHeight;
-
-// the buffer we fill up which we then fill the bitmap with
-    IntBuffer intBuffer = IntBuffer.allocate(imageWidth*imageHeight);
-// If you're reusing a buffer, next line imperative to refill from the start,
-// if not good practice
-    intBuffer.position(0);
-
-// Set the alpha for the image: 0 is transparent, 255 fully opaque
-    final byte alpha = (byte) 255;
-
-// Get each pixel, one at a time
-    for (int y = 0; y < imageHeight; y++) {
-      for (int x = 0; x < imageWidth; x++) {
-        // Get the Y value, stored in the first block of data
-        // The logical "AND 0xff" is needed to deal with the signed issue
-        int Y = data[y*imageWidth + x] & 0xff;
-
-        // Get U and V values, stored after Y values, one per 2x2 block
-        // of pixels, interleaved. Prepare them as floats with correct range
-        // ready for calculation later.
-        int xby2 = x/2;
-        int yby2 = y/2;
-
-        // make this V for NV12/420SP
-        float U = (float)(data[numPixels + 2*xby2 + yby2*imageWidth] & 0xff) - 128.0f;
-
-        // make this U for NV12/420SP
-        float V = (float)(data[numPixels + 2*xby2 + 1 + yby2*imageWidth] & 0xff) - 128.0f;
-
-        // Do the YUV -> RGB conversion
-        float Yf = 1.164f*((float)Y) - 16.0f;
-        int R = (int)(Yf + 1.596f*V);
-        int G = (int)(Yf - 0.813f*V - 0.391f*U);
-        int B = (int)(Yf            + 2.018f*U);
-
-        // Clip rgb values to 0-255
-        R = R < 0 ? 0 : R > 255 ? 255 : R;
-        G = G < 0 ? 0 : G > 255 ? 255 : G;
-        B = B < 0 ? 0 : B > 255 ? 255 : B;
-
-        // Put that pixel in the buffer
-        intBuffer.put(alpha*16777216 + R*65536 + G*256 + B);
-      }
-    }
-
-// Get buffer ready to be read
-    intBuffer.flip();
-
-// Push the pixel information from the buffer onto the bitmap.
-    bitmap.copyPixelsFromBuffer(intBuffer);
-    return bitmap;
-  }
 }
