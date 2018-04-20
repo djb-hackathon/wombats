@@ -54,9 +54,11 @@ import com.google.cloud.vision.v1.WebDetection.WebPage;
 import com.google.cloud.vision.v1.WebDetectionParams;
 import com.google.cloud.vision.v1.Word;
 
+import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.SyncHttpClient;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -64,6 +66,7 @@ import org.json.JSONObject;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -167,25 +170,28 @@ public class Detect {
         try {
 
             String requestURL = "https://vision.googleapis.com/v1/images:annotate?key=AIzaSyDL2EgkAvpP1tVvqCdn1HaedgyPG-t621c";
-            AsyncHttpClient client = new AsyncHttpClient();
+            SyncHttpClient client = new SyncHttpClient();
             StringEntity entity = new StringEntity(Detect.buildRequestJSON(byteArray));
             client.post(context, requestURL, entity, "application/json",new AsyncHttpResponseHandler(){
                         @Override
                         public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                            visResponse = responseBody.toString();
+                            visResponse = new String(Base64.decode(Base64.encode(responseBody,
+                                    Base64.DEFAULT), Base64.DEFAULT));
                             System.out.print(visResponse);
                         }
 
                         @Override
                         public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                            visResponse = responseBody.toString();
+                            visResponse = new String(Base64.decode(Base64.encode(responseBody,
+                                    Base64.DEFAULT), Base64.DEFAULT));
                             System.out.print(visResponse);
                         }
                     }
 
             );
         } catch(Exception e){
-
+            System.out.println("first exception: ");
+            System.out.println(e);
         }
         System.out.println(visResponse);
         return visResponse;
@@ -197,11 +203,13 @@ public class Detect {
         JSONArray labels = null;
         System.out.print(str);
         try {
-            labels = new JSONObject(str)
-                    .getJSONArray("responses")
-                    .getJSONObject(0)
-                    .getJSONArray("labelAnnotations");
-        }catch(Exception e) {}
+            JSONObject o1 = new JSONObject(str);
+            JSONArray a1 = o1.getJSONArray("responses");
+            JSONObject o2 = a1.getJSONObject(0);
+            labels = o2.getJSONArray("labelAnnotations");
+        }catch(Exception e) {
+            System.out.println("2 exception: ");
+            System.out.print(e);}
         System.out.print(labels.toString());
         return labels;
     }
@@ -211,9 +219,11 @@ public class Detect {
 
     public static String buildRequestJSON(byte[] byteArray) {
         String requestJSON = "";
-        String base64data = Base64.encodeToString(byteArray, Base64.URL_SAFE);
+
 
         try {
+            String base64data = android.util.Base64.encodeToString(byteArray, android.util.Base64.DEFAULT);
+           // String base64data = new String(org.apache.commons.codec.binary.Base64.encodeBase64(byteArray));
             // Create an array containing
             //  the LABEL_DETECTION feature
             JSONArray features = new JSONArray();
@@ -224,6 +234,7 @@ public class Detect {
             // Create an object containing
             // the Base64-encoded image data
             JSONObject imageContent = new JSONObject();
+
             imageContent.put("content", base64data);
 
             // Put the array and object into a single request
@@ -238,6 +249,8 @@ public class Detect {
 
             // Convert the JSON into a string
             requestJSON = postData.toString();
+            System.out.println("------------------------------");
+            System.out.println(requestJSON);
         } catch (Exception e) {
             System.err.print(e.getMessage());
         }

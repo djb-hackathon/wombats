@@ -17,7 +17,12 @@
 package com.google.ar.core.examples.java.helloar;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.media.Image;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -28,12 +33,14 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.ArImage;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
@@ -65,10 +72,14 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 
 import org.json.JSONArray;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -335,14 +346,48 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
 
       if (capturePicture) {
         capturePicture = false;
-        Image image = frame.acquireCameraImage();
+
+        ArImage image = (ArImage)frame.acquireCameraImage();
+        System.out.println("format="+image.getFormat());
+        System.out.println("planes="+image.getPlanes());
+        ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+        byte[] byteArray = new byte[buffer.capacity()];
+        buffer.get(byteArray);
+        byte[] nv21;
+        ByteBuffer yBuffer = image.getPlanes()[0].getBuffer();
+        ByteBuffer uBuffer = image.getPlanes()[1].getBuffer();
+        ByteBuffer vBuffer = image.getPlanes()[2].getBuffer();
+
+        int ySize = yBuffer.remaining();
+        int uSize = uBuffer.remaining();
+        int vSize = vBuffer.remaining();
+
+        nv21 = new byte[ySize + uSize + vSize];
+
+//U and V are swapped
+        yBuffer.get(nv21, 0, ySize);
+        vBuffer.get(nv21, ySize, vSize);
+        uBuffer.get(nv21, ySize + vSize, uSize);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        YuvImage yuv = new YuvImage(nv21, ImageFormat.NV21, image.getWidth(), image.getHeight(), null);
+        yuv.compressToJpeg(new Rect(0, 0, image.getWidth(), image.getHeight()), 100, out);
+        byte[] byteArray2 = out.toByteArray();
+
+        /*Image image = frame.acquireCameraImage();
         ByteBuffer buffer = image.getPlanes()[0].getBuffer();
         byte[] byteArray = new byte[buffer.capacity()];
         buffer.get(byteArray);
         image.close();
+        Bitmap bm = yuv2RBG(image.getWidth(), image.getHeight(), byteArray);*/
+
+        /*ByteArrayOutputStream bstream = new ByteArrayOutputStream();
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(),R.drawable.blender);
+        bitmap.compress(Bitmap.CompressFormat.JPEG,100,bstream);
+        byte[] byteArray = bstream.toByteArray();*/
+
 
         Context context = this.getApplicationContext();
-        String response = new Detect().getResponse(context,byteArray);
+        String response = new Detect().getResponse(context,byteArray2);
         JSONArray r = Detect.parseJSON(response);
         System.out.println(r.toString());
 
@@ -531,5 +576,63 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
     prop.cost = itemCost;
     prop.propertyDescription = itemDescription;
     allSelectedPropertyData.add(prop);
+  }
+
+
+  private static Bitmap yuv2RBG(int imageWidth, int imageHeight, byte[] data) {
+    // the bitmap we want to fill with the image
+    Bitmap bitmap = Bitmap.createBitmap(imageWidth, imageHeight, Bitmap.Config.ARGB_8888);
+    int numPixels = imageWidth*imageHeight;
+
+// the buffer we fill up which we then fill the bitmap with
+    IntBuffer intBuffer = IntBuffer.allocate(imageWidth*imageHeight);
+// If you're reusing a buffer, next line imperative to refill from the start,
+// if not good practice
+    intBuffer.position(0);
+
+// Set the alpha for the image: 0 is transparent, 255 fully opaque
+    final byte alpha = (byte) 255;
+
+// Get each pixel, one at a time
+    for (int y = 0; y < imageHeight; y++) {
+      for (int x = 0; x < imageWidth; x++) {
+        // Get the Y value, stored in the first block of data
+        // The logical "AND 0xff" is needed to deal with the signed issue
+        int Y = data[y*imageWidth + x] & 0xff;
+
+        // Get U and V values, stored after Y values, one per 2x2 block
+        // of pixels, interleaved. Prepare them as floats with correct range
+        // ready for calculation later.
+        int xby2 = x/2;
+        int yby2 = y/2;
+
+        // make this V for NV12/420SP
+        float U = (float)(data[numPixels + 2*xby2 + yby2*imageWidth] & 0xff) - 128.0f;
+
+        // make this U for NV12/420SP
+        float V = (float)(data[numPixels + 2*xby2 + 1 + yby2*imageWidth] & 0xff) - 128.0f;
+
+        // Do the YUV -> RGB conversion
+        float Yf = 1.164f*((float)Y) - 16.0f;
+        int R = (int)(Yf + 1.596f*V);
+        int G = (int)(Yf - 0.813f*V - 0.391f*U);
+        int B = (int)(Yf            + 2.018f*U);
+
+        // Clip rgb values to 0-255
+        R = R < 0 ? 0 : R > 255 ? 255 : R;
+        G = G < 0 ? 0 : G > 255 ? 255 : G;
+        B = B < 0 ? 0 : B > 255 ? 255 : B;
+
+        // Put that pixel in the buffer
+        intBuffer.put(alpha*16777216 + R*65536 + G*256 + B);
+      }
+    }
+
+// Get buffer ready to be read
+    intBuffer.flip();
+
+// Push the pixel information from the buffer onto the bitmap.
+    bitmap.copyPixelsFromBuffer(intBuffer);
+    return bitmap;
   }
 }
