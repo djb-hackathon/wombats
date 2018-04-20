@@ -87,7 +87,7 @@
       android:layout_alignParentEnd="true"
       android:layout_alignParentTop="true"
       android:onClick="goToDisplayTable"
-      android:text="Button" />
+      android:text="View Property" />
 
   <TextView
       android:id="@+id/propertyPriceTotal"

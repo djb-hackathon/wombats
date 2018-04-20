@@ -81,7 +81,6 @@ import javax.microedition.khronos.opengles.GL10;
  */
 public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
   private static final String TAG = HelloArActivity.class.getSimpleName();
-  public ArrayList<ARProperty> listObjects = new ArrayList<>();
 
   public static HelloArActivity INSTANCE;
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
@@ -346,10 +345,6 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         JSONArray r = Detect.parseJSON(response);
         System.out.println(r.toString());
 
-        ARProperty item = new ARProperty();
-        item.cost = BigDecimal.valueOf(0.0);
-        item.propertyDescription = "fdsnfkljdshkj";
-        listObjects.add(item);
       }
 
       // If not tracking, don't draw 3d objects.
@@ -420,40 +415,37 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
   }
 
   public void addRowToTable(){
-
-    TableLayout t1;
     TableLayout tl = (TableLayout) findViewById(R.id.main_table);
 
+    //add header
     TableRow tr_head = new TableRow(this);
-
     addColumn(tr_head, "ITEM");
     addColumn(tr_head, "VALUE");
-    //addColumn(tr_head, "IMAGE FILE LOCATION");
-
     tl.addView(tr_head, new TableLayout.LayoutParams(
             ViewGroup.LayoutParams.FILL_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT));
 
-    String propDesc;
-    String cost;
-    //String fileLocation;
+    //add all the data
+    for (int i = 0; i < allSelectedPropertyData.size(); i++){
+      TableRow tr = new TableRow(this);
 
-    TableRow tr = new TableRow(this);
-
-    for (int i = 0; i < listObjects.size(); i++){
-      propDesc = listObjects.get(i).propertyDescription;
-      cost = listObjects.get(i).cost.toString();
-      //fileLocation = listObjects.get(i).fileLocation;
-
-      addColumn(tr_head, propDesc);
-      addColumn(tr_head, cost);
-      //addColumn(tr_head, fileLocation);
-
+      addColumn(tr, allSelectedPropertyData.get(i).propertyDescription);
+      addColumn(tr, allSelectedPropertyData.get(i).cost.toString());
       tl.addView(tr, new TableLayout.LayoutParams(
               ViewGroup.LayoutParams.FILL_PARENT,
               ViewGroup.LayoutParams.WRAP_CONTENT));
 
     }
+    //add grand total row
+    TableRow tr_tail= new TableRow(this);
+
+    addColumn(tr_tail, "TOTAL");
+    addColumn(tr_tail, propertyPriceTotal.toString());
+
+    tl.addView(tr_tail, new TableLayout.LayoutParams(
+            ViewGroup.LayoutParams.FILL_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT));
+
   }
 
   public void addColumn(TableRow tr, String displayText){
