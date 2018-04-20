@@ -8,7 +8,7 @@ import android.os.Handler;
 public class SplashScreen2 extends Activity {
 
     /** Duration of wait **/
-    private final int SPLASH_DISPLAY_LENGTH = 15000;
+    private final int SPLASH_DISPLAY_LENGTH = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
