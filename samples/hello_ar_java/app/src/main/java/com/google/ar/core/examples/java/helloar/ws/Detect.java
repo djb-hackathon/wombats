@@ -1,4 +1,4 @@
-package com.amfam.wombat.arpropertypricecalculator.ws;
+package com.google.ar.core.examples.java.helloar.ws;
 
 /*
  * Copyright 2017 Google Inc.
@@ -173,11 +173,13 @@ public class Detect {
                         @Override
                         public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                             visResponse = responseBody.toString();
+                            System.out.print(visResponse);
                         }
 
                         @Override
                         public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                             visResponse = responseBody.toString();
+                            System.out.print(visResponse);
                         }
                     }
 
@@ -191,6 +193,18 @@ public class Detect {
 
 
 
+    public static JSONArray parseJSON(String str) {
+        JSONArray labels = null;
+        System.out.print(str);
+        try {
+            labels = new JSONObject(str)
+                    .getJSONArray("responses")
+                    .getJSONObject(0)
+                    .getJSONArray("labelAnnotations");
+        }catch(Exception e) {}
+        System.out.print(labels.toString());
+        return labels;
+    }
 
 
 

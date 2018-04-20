@@ -16,6 +16,7 @@
 
 package com.google.ar.core.examples.java.helloar;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.media.Image;
 import android.opengl.GLES20;
@@ -52,12 +53,16 @@ import com.google.ar.core.examples.java.common.rendering.ObjectRenderer;
 import com.google.ar.core.examples.java.common.rendering.ObjectRenderer.BlendMode;
 import com.google.ar.core.examples.java.common.rendering.PlaneRenderer;
 import com.google.ar.core.examples.java.common.rendering.PointCloudRenderer;
+import com.google.ar.core.examples.java.helloar.ws.Detect;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
+
+import org.json.JSONArray;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -326,6 +331,11 @@ public class HelloArActivity extends AppCompatActivity implements GLSurfaceView.
         byte[] byteArray = new byte[buffer.capacity()];
         buffer.get(byteArray);
         image.close();
+
+        Context context = this.getApplicationContext();
+        String response = new Detect().getResponse(context,byteArray);
+        JSONArray r = Detect.parseJSON(response);
+        System.out.println(r.toString());
 
         ARProperty item = new ARProperty();
         item.cost = BigDecimal.valueOf(0.0);
